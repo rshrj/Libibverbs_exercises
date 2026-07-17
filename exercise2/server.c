@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 
   printf("waiting for connections. interrupt (^C) to exit.\n");
 
-  rc_server_loop(DEFAULT_PORT);
+  rc_server_loop("24764");
 
   return 0;
 }
