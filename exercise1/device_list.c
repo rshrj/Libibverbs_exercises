@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2026 Rishi Raj. All rights reserved.
+ * Copyright (c) 2004 Topspin Communications. All rights reserved.
  */
 
 #if HAVE_CONFIG_H
@@ -8,9 +8,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
+#include <endian.h>
 
 #include <infiniband/verbs.h>
-#include <infiniband/arch.h>
 
 static const char *node_type_str(enum ibv_node_type type)
 {
@@ -55,7 +57,7 @@ int main(void)
 	int num_devices;
 
 	dev_list = ibv_get_device_list(&num_devices);
-	if (!dev_list) {
+	if (dev_list == NULL) {
 		perror("Failed to get RDMA device list");
 		return EXIT_FAILURE;
 	}
@@ -71,21 +73,18 @@ int main(void)
 		printf("  Name:              %s\n",
 		       ibv_get_device_name(device));
 		printf("  Node type:         %s\n",
-		       node_type_str(ibv_get_device_node_type(device)));
+		       node_type_str(device->node_type));
 		printf("  Transport:         %s\n",
-		       transport_type_str(ibv_get_device_transport_type(device)));
-		printf("  Node GUID:         %016llx\n",
-		       (unsigned long long)
-		       ntohll(ibv_get_device_guid(device)));
+		       transport_type_str(device->transport_type));
 
 		context = ibv_open_device(device);
-		if (!context) {
+		if (context == NULL) {
 			perror("  Failed to open device");
 			putchar('\n');
 			continue;
 		}
 
-		if (ibv_query_device(context, &attr)) {
+		if (ibv_query_device(context, &attr) != 0) {
 			perror("  Failed to query device");
 			ibv_close_device(context);
 			putchar('\n');
@@ -93,8 +92,10 @@ int main(void)
 		}
 
 		printf("  Firmware version:  %s\n", attr.fw_ver);
-		printf("  System image GUID: %016llx\n",
-		       (unsigned long long) attr.sys_image_guid);
+		printf("  Node GUID:         %016" PRIx64 "\n",
+		       be64toh(attr.node_guid));
+		printf("  System image GUID: %016" PRIx64 "\n",
+		       be64toh(attr.sys_image_guid));
 		printf("  Vendor ID:         0x%06x\n", attr.vendor_id);
 		printf("  Vendor part ID:    %u\n", attr.vendor_part_id);
 		printf("  Hardware version:  %u\n", attr.hw_ver);
